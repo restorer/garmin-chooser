@@ -13,6 +13,7 @@ class ChooserApp extends Application.AppBase {
     }
 
     function getInitialView() {
-        return [new ChooserView(), new ChooserViewDelegate()];
+        var view = new ChooserView();
+        return [view, new ChooserViewDelegate(view)];
     }
 }

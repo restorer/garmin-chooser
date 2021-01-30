@@ -1,6 +1,22 @@
 using Toybox.Graphics;
 using Toybox.WatchUi;
 
+class BoxDrawable extends WatchUi.Drawable {
+    var color = 0;
+
+    function initialize(settings) {
+        Drawable.initialize(settings);
+        color = (settings.hasKey(:color) ? settings[:color] : Graphics.COLOR_TRANSPARENT);
+    }
+
+    function draw(dc) {
+        if (color != Graphics.COLOR_TRANSPARENT) {
+            dc.setColor(color, Graphics.COLOR_TRANSPARENT);
+            dc.fillRectangle(locX, locY, width, height);
+        }
+    }
+}
+
 class RoundIconDrawable extends WatchUi.Drawable {
     var font = null;
     var icon = "";
