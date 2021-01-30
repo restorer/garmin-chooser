@@ -1,0 +1,3 @@
+<resources>
+    <font id="Icons" filename="fonts/icons_32.fnt" filter="0123" antialias="true" />
+</resources>

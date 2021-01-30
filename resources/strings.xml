@@ -1,0 +1,9 @@
+<resources>
+    <string id="AppName">Chooser</string>
+    <string id="Round">Round $1$</string>
+
+    <string id="Prompt">Click the menu button</string>
+
+    <string id="MenuItem1">Item 1</string>
+    <string id="MenuItem2">Item 2</string>
+</resources>
