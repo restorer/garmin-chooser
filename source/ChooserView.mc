@@ -1,18 +1,6 @@
 using Toybox.WatchUi;
-
-class ChooserViewProgressDelegate extends WatchUi.BehaviorDelegate {
-    var ownerView = null;
-
-    function initialize(ownerView) {
-        BehaviorDelegate.initialize();
-        self.ownerView = ownerView;
-    }
-
-    function onBack() {
-        ownerView.isProgressShown = false;
-        return true;
-    }
-}
+using Toybox.Timer;
+using Toybox.Time;
 
 class ChooserViewConfirmationDelegate extends WatchUi.ConfirmationDelegate {
     var ownerView = null;
@@ -34,8 +22,6 @@ class ChooserViewConfirmationDelegate extends WatchUi.ConfirmationDelegate {
 
 class ChooserViewDelegate extends WatchUi.BehaviorDelegate {
     var ownerView = null;
-    var progressThumbsUpText = "";
-    var progressThumbsDownText = "";
     var confirmStartText = "";
     var confirmCancelText = "";
 
@@ -43,8 +29,6 @@ class ChooserViewDelegate extends WatchUi.BehaviorDelegate {
         BehaviorDelegate.initialize();
 
         self.ownerView = ownerView;
-        progressThumbsUpText = WatchUi.loadResource(Rez.Strings.ProgressThumbsUp);
-        progressThumbsDownText = WatchUi.loadResource(Rez.Strings.ProgressThumbsDown);
         confirmStartText = WatchUi.loadResource(Rez.Strings.ConfirmStart);
         confirmCancelText = WatchUi.loadResource(Rez.Strings.ConfirmCancel);
     }
@@ -55,26 +39,12 @@ class ChooserViewDelegate extends WatchUi.BehaviorDelegate {
     }
 
     function onThumbsUp() {
-        ownerView.isProgressShown = true;
-
-        WatchUi.pushView(
-            new WatchUi.ProgressBar(progressThumbsUpText, null),
-            new ChooserViewProgressDelegate(ownerView),
-            WatchUi.SLIDE_LEFT
-        );
-
+        ownerView.onThumbsUp();
         return true;
     }
 
     function onThumbsDown() {
-        ownerView.isProgressShown = true;
-
-        WatchUi.pushView(
-            new WatchUi.ProgressBar(progressThumbsDownText, null),
-            new ChooserViewProgressDelegate(ownerView),
-            WatchUi.SLIDE_LEFT
-        );
-
+        ownerView.onThumbsDown();
         return true;
     }
 
@@ -118,34 +88,58 @@ class ChooserView extends WatchUi.View {
     const ICON_DELETE = "3";
 
     const MID_BUTTON_BORDER_WIDTH = 4;
+    const COLOR_THUMBS_UP = Graphics.COLOR_YELLOW;
+    const COLOR_THUMBS_DOWN = Graphics.COLOR_DK_BLUE;
+
+    const PROGRESS_LINE_WIDTH = 5;
+    const PROGRESS_UPDATE_DURATION = 50;
 
     var titleFont = Graphics.FONT_SMALL;
     var iconFont = null;
     var roundFormat = "";
-    var progressStartingText = "";
-    var progressCancellingText = "";
+    var startingText = "";
+    var cancellingText = "";
+    var progressTimer = null;
 
-    var isProgressShown = false;
     var pendingMethod = null;
+    var isProgressShown = false;
+    var isProgressTimerStarted = false;
+    var progressDt = 0;
+
+    var dcWidth = 0;
+    var dcHeight = 0;
+    var dcSize = 0;
+    var dcCenterX = 0;
+    var dcCenterY = 0;
+    var progressRadius = 0;
 
     function initialize() {
         View.initialize();
 
         iconFont = WatchUi.loadResource(Rez.Fonts.Icons);
         roundFormat = WatchUi.loadResource(Rez.Strings.Round);
-        progressStartingText = WatchUi.loadResource(Rez.Strings.ProgressStarting);
-        progressCancellingText = WatchUi.loadResource(Rez.Strings.ProgressCancelling);
+        startingText = WatchUi.loadResource(Rez.Strings.Starting);
+        cancellingText = WatchUi.loadResource(Rez.Strings.Cancelling);
+        progressTimer = new Timer.Timer();
     }
 
     function onLayout(dc) {
-        var width = dc.getWidth();
-        var height = dc.getHeight();
+        dcWidth = dc.getWidth();
+        dcHeight = dc.getHeight();
+        dcSize = (dcWidth < dcHeight ? dcWidth : dcHeight);
+        dcCenterX = (dcWidth * 0.5).toNumber();
+        dcCenterY = (dcHeight * 0.5).toNumber();
+        progressRadius = ((dcSize - PROGRESS_LINE_WIDTH) * 0.5).toNumber();
 
-        setLayout(getChooseLayout(width, height, 42));
-        // setLayout(getResultLayout(width, height, 42, :opThumbsDown, :myThumbsUp));
+        setLayout(getChooseLayout(42));
+        //
     }
 
     function onShow() {
+        if (isProgressShown && !isProgressTimerStarted) {
+            isProgressTimerStarted = true;
+            progressTimer.start(method(:onProgressTimer), PROGRESS_UPDATE_DURATION, true);
+        }
     }
 
     function onUpdate(dc) {
@@ -156,60 +150,111 @@ class ChooserView extends WatchUi.View {
             pendingMethod = null;
             _method.invoke();
         }
+
+        if (isProgressShown) {
+            drawProgress(dc);
+        }
     }
 
     function onHide() {
+        if (isProgressShown && isProgressTimerStarted) {
+            progressTimer.stop();
+            isProgressTimerStarted = false;
+        }
     }
 
     // Handlers
 
-    function onStartRound() {
-        isProgressShown = true;
+    function onProgressTimer() {
+        progressDt += PROGRESS_UPDATE_DURATION;
+        WatchUi.requestUpdate();
+    }
 
-        WatchUi.pushView(
-            new WatchUi.ProgressBar(progressStartingText, null),
-            new ChooserViewProgressDelegate(self),
-            WatchUi.SLIDE_RIGHT
-        );
+    function onThumbsUp() {
+        showProgress();
+        setLayout(getResultLayout(42, null, :myThumbsUp));
+    }
+
+    function onThumbsDown() {
+        showProgress();
+        setLayout(getResultLayout(42, :myThumbsDown, null));
+    }
+
+    function onStartRound() {
+        // TODO
     }
 
     function onCancelRound() {
+        // TODO
+    }
+
+    // Progress
+
+    function showProgress() {
         isProgressShown = true;
 
-        WatchUi.pushView(
-            new WatchUi.ProgressBar(progressCancellingText, null),
-            new ChooserViewProgressDelegate(self),
-            WatchUi.SLIDE_RIGHT
+        if (!isProgressTimerStarted) {
+            isProgressTimerStarted = true;
+            progressTimer.start(method(:onProgressTimer), PROGRESS_UPDATE_DURATION, true);
+        }
+    }
+
+    function hideProgress() {
+        isProgressShown = false;
+
+        if (isProgressTimerStarted) {
+            progressTimer.stop();
+            isProgressTimerStarted = false;
+        }
+    }
+
+    function drawProgress(dc) {
+        var sa = 360 - ((progressDt / 1000).toNumber() % 24) * 15;
+        var da = ((progressDt % 1000) * 18 / 100).toNumber() + 1;
+
+        if (progressDt % 2000 >= 1000) {
+            da = 180 - da;
+        }
+
+        dc.setColor(Graphics.COLOR_DK_GREEN, Graphics.COLOR_TRANSPARENT);
+        dc.setPenWidth(PROGRESS_LINE_WIDTH);
+
+        dc.drawArc(
+            dcCenterX,
+            dcCenterY,
+            progressRadius,
+            Graphics.ARC_COUNTER_CLOCKWISE,
+            sa - da,
+            sa + da
         );
     }
 
     // Layouts
 
-    function getSetupLayout(width, height) {
+    function getSetupLayout() {
         return [];
     }
 
-    function getChooseLayout(width, height, roundNum) {
-        var midSize = (width < height ? height : height) * 0.25;
+    function getChooseLayout(roundNum) {
+        var midSize = dcSize * 0.25;
         var midHalfSize = midSize * 0.5;
-        var midTopY = height * 0.5 - midHalfSize;
-        var botHeight = height * 0.2;
+        var midTopY = dcCenterY - midHalfSize;
+        var botHeight = dcHeight * 0.2;
 
         return [
-            getRoundNumDrawable(width * 0.5, height * 0.1, roundNum),
-            getMidButton(width * 0.3 - midHalfSize, midTopY, midSize, Graphics.COLOR_DK_RED, ICON_THUMBS_DOWN, :onThumbsDown),
-            getMidButton(width * 0.7 - midHalfSize, midTopY, midSize, Graphics.COLOR_DK_GREEN, ICON_THUMBS_UP, :onThumbsUp),
-            getBotButton(height - botHeight, width, botHeight, Graphics.COLOR_DK_RED, Graphics.COLOR_RED, ICON_DELETE, :onCancelRound),
+            getRoundNumDrawable(dcCenterX, dcHeight * 0.1, roundNum),
+            getMidButton(dcWidth * 0.3 - midHalfSize, midTopY, midSize, COLOR_THUMBS_DOWN, ICON_THUMBS_DOWN, :onThumbsDown),
+            getMidButton(dcWidth * 0.7 - midHalfSize, midTopY, midSize, COLOR_THUMBS_UP, ICON_THUMBS_UP, :onThumbsUp),
+            getBotButton(dcHeight - botHeight, dcWidth, botHeight, Graphics.COLOR_DK_RED, Graphics.COLOR_RED, ICON_DELETE, :onCancelRound),
         ];
     }
 
-    function getResultLayout(width, height, roundNum, firstResult, secondResult) {
-        var midSize = (width < height ? height : height) * 0.25;
+    function getResultLayout(roundNum, firstResult, secondResult) {
+        var midSize = dcSize * 0.25;
         var midHalfSize = midSize * 0.5;
-        var midCenterY = height * 0.5;
-        var midTopY = midCenterY - midHalfSize;
-        var botHeight = height * 0.2;
-        var botTopY = height - botHeight;
+        var midTopY = dcCenterY - midHalfSize;
+        var botHeight = dcHeight * 0.2;
+        var botTopY = dcHeight - botHeight;
         var isFinished = (firstResult != null && secondResult != null);
 
         var layout = [];
@@ -220,18 +265,21 @@ class ChooserView extends WatchUi.View {
                 || (firstResult == :myThumbsDown && secondResult == :opThumbsDown)
                 || (firstResult == :opThumbsDown && secondResult == :myThumbsDown);
 
-            layout.add(getTopIndicator(width, height * 0.2, isSame ? Graphics.COLOR_DK_GREEN : Graphics.COLOR_DK_RED));
+            layout.add(getTopIndicator(dcWidth, dcHeight * 0.2, isSame ? Graphics.COLOR_DK_GREEN : Graphics.COLOR_DK_RED));
         }
 
         layout.addAll([
-            getRoundNumDrawable(width * 0.5, height * 0.1, roundNum),
-            getMidResult(width * 0.3 - midHalfSize, midTopY, midSize, midHalfSize, firstResult),
-            getMidResult(width * 0.7 - midHalfSize, midTopY, midSize, midHalfSize, secondResult),
-            (isFinished
-                ? getBotButton(botTopY, width, botHeight, Graphics.COLOR_DK_GREEN, Graphics.COLOR_GREEN, ICON_CHECKMARK, :onStartRound)
-                : getBotButton(botTopY, width, botHeight, Graphics.COLOR_DK_RED, Graphics.COLOR_RED, ICON_DELETE, :onCancelRound)
-            ),
+            getRoundNumDrawable(dcCenterX, dcHeight * 0.1, roundNum),
+            getMidResult(dcWidth * 0.3 - midHalfSize, midTopY, midSize, midHalfSize, firstResult),
+            getMidResult(dcWidth * 0.7 - midHalfSize, midTopY, midSize, midHalfSize, secondResult),
         ]);
+
+        if (!isProgressShown) {
+            layout.add(isFinished
+                ? getBotButton(botTopY, dcWidth, botHeight, Graphics.COLOR_DK_GREEN, Graphics.COLOR_GREEN, ICON_CHECKMARK, :onStartRound)
+                : getBotButton(botTopY, dcWidth, botHeight, Graphics.COLOR_DK_RED, Graphics.COLOR_RED, ICON_DELETE, :onCancelRound)
+            );
+        }
 
         return layout;
     }
@@ -320,7 +368,7 @@ class ChooserView extends WatchUi.View {
                 :locY => y,
                 :width => size,
                 :height => size,
-                :backgroundColor => Graphics.COLOR_DK_GREEN,
+                :backgroundColor => COLOR_THUMBS_UP,
                 :iconColor => Graphics.COLOR_WHITE,
             });
         }
@@ -333,7 +381,7 @@ class ChooserView extends WatchUi.View {
                 :locY => y,
                 :width => size,
                 :height => size,
-                :backgroundColor => Graphics.COLOR_DK_RED,
+                :backgroundColor => COLOR_THUMBS_DOWN,
                 :iconColor => Graphics.COLOR_WHITE,
             });
         }

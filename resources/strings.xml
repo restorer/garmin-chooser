@@ -1,10 +1,8 @@
 <resources>
     <string id="AppName">Chooser</string>
     <string id="Round">#$1$</string>
-    <string id="ProgressThumbsUp">👍</string>
-    <string id="ProgressThumbsDown">👎</string>
-    <string id="ProgressStarting">Starting</string>
-    <string id="ProgressCancelling">Cancelling</string>
+    <string id="Starting">Starting</string>
+    <string id="Cancelling">Cancelling</string>
     <string id="ConfirmStart">Start new round?</string>
     <string id="ConfirmCancel">Cancel this round?</string>
 
