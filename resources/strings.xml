@@ -1,11 +1,15 @@
 <resources>
     <string id="AppName">Chooser</string>
+
     <string id="Round">#$1$</string>
+    <string id="Refreshing">Refreshing</string>
     <string id="Starting">Starting</string>
     <string id="Cancelling">Cancelling</string>
     <string id="ConfirmStart">Start new round?</string>
     <string id="ConfirmCancel">Cancel this round?</string>
+    <string id="Error">Error</string>
 
-    <string id="MenuItem1">Item 1</string>
-    <string id="MenuItem2">Item 2</string>
+    <string id="MenuTitle">Chooser</string>
+    <string id="MenuVersion">v1.0</string>
+    <string id="MenuLicense">Icons by Icons8</string>
 </resources>

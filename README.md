@@ -1,3 +1,3 @@
-# Smoke Watch Face for Garmin Watches
+# The Chooser for Garmin Watches
 
-Icons by [Font Awesome](https://fontawesome.com/license).
+Icons by [Icons8](https://icons8.com).

@@ -44,10 +44,6 @@ class RoundIconDrawable extends WatchUi.Drawable {
     }
 
     function draw(dc) {
-        if (dc has :setAntiAlias) {
-            dc.setAntiAlias(true);
-        }
-
         drawBackground(dc);
 
         if (font != null && iconColor != Graphics.COLOR_TRANSPARENT && icon != "") {

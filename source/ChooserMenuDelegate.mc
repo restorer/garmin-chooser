@@ -1,16 +1,20 @@
 using Toybox.WatchUi;
 using Toybox.System;
 
-class ChooserMenuDelegate extends WatchUi.MenuInputDelegate {
+class ChooserMenuDelegate extends WatchUi.Menu2InputDelegate {
     function initialize() {
-        MenuInputDelegate.initialize();
+        Menu2InputDelegate.initialize();
     }
 
-    function onMenuItem(item) {
-        if (item == :Item1) {
-            System.println("Item 1");
-        } else if (item == :Item2) {
-            System.println("Item 2");
-        }
+    // function onSelect(menuItem) {
+    // }
+}
+
+class ChooserMenu extends WatchUi.Menu2 {
+    function initialize() {
+        Menu2.initialize({ :title => WatchUi.loadResource(Rez.Strings.MenuTitle) });
+
+        addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.MenuVersion), null, "version", null));
+        addItem(new WatchUi.MenuItem(WatchUi.loadResource(Rez.Strings.MenuLicense), null, "license", null));
     }
 }
